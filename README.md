@@ -4,6 +4,8 @@ This project uses the Apify Twitter Scraper actor to collect tweets based on key
 
 1. **Data Collection & Conversion**: `twitter_scraper.py` extracts tweets using the Apify API, saves them in JSONL format, and automatically converts them to CSV with dedicated columns for media items
 2. **Media Analysis**: `check_media.py` and `check_videos.py` analyze the collected tweets for photos and videos
+3. **Media Download**: `download_media.py` downloads all photos and videos from tweets and adds columns with local file paths
+4. **Tweet Viewer**: `tweet_viewer.py` is a Streamlit app that displays tweets with their text, images, videos, and metadata
 
 ## Setup
 
@@ -68,6 +70,38 @@ python check_videos.py
 
 Both scripts will automatically use the most recent CSV file created.
 
+## Media Download
+
+To download all photos and videos from tweets:
+
+```bash
+python download_media.py
+```
+
+This script will:
+1. Read the most recent CSV file (or you can specify one)
+2. Download all photos and videos to the `media/photos` and `media/videos` directories
+3. Create a new CSV file with additional columns for local file paths
+4. Provide a summary of downloaded media
+
+The output CSV will have additional columns like `photo1_local_path` and `video1_local_path` that contain the paths to the downloaded files.
+
+## Interactive Tweet Viewer
+
+To visualize your tweets with a user-friendly interface:
+
+```bash
+streamlit run tweet_viewer.py
+```
+
+This will launch a web app with the following features:
+1. Interactive display of tweets with photos and videos
+2. Filtering options by media type, hashtag, and username
+3. Sorting by date, likes, retweets, or replies
+4. Adjustable number of tweets to display
+
+The viewer automatically finds the most recent CSV file with local paths, or you can specify a specific file.
+
 ## Why This Approach?
 
 This project uses a streamlined approach for several reasons:
@@ -76,6 +110,7 @@ This project uses a streamlined approach for several reasons:
 2. **Simplified Usage**: Just run one script to collect and prepare data for analysis
 3. **Media-Focused Analysis**: Dedicated tools to examine photo and video content
 4. **Clean CSV Structure**: Media items get their own dedicated columns for easy analysis
+5. **Local Media Access**: Download and store media files locally for offline analysis
 
 ## Understanding the Data Formats
 
@@ -131,6 +166,32 @@ Analyze media content in your collected tweets:
 - Lists tweets with the most media items
 - Detailed analysis of video formats and resolutions
 
+### download_media.py
+
+Downloads all media files from tweets and creates a new CSV with local paths:
+
+- **Input**: CSV file from `extract_tweet_data.py`
+- **Output**: 
+  - Media files in `media/photos` and `media/videos` directories
+  - New CSV file with additional columns for local file paths
+- **Features**:
+  - Creates unique filenames based on tweet ID and user name
+  - Handles both photos and videos with appropriate timeouts
+  - Adds columns with local file paths (e.g., `photo1_local_path`)
+  - Provides detailed summary of downloaded media
+
+### tweet_viewer.py
+
+Provides an interactive web interface for viewing tweets:
+
+- **Input**: CSV file with local paths from `download_media.py`
+- **Features**:
+  - Beautiful tweet display with original styling
+  - Photo and video display from local files
+  - Filtering by media type, hashtag, or username
+  - Sorting by various engagement metrics
+  - Responsive layout for different screen sizes
+
 ## Working with the JSONL Data
 
 If you want to directly work with the original JSONL data:
@@ -155,8 +216,34 @@ for tweet in tweets:
                 print(f"Video variant: {variant['url']}")
 ```
 
+## Working with the Downloaded Media
+
+You can use the CSV file with local paths to access the downloaded media:
+
+```python
+# Example: Using the CSV file with local media paths
+import csv
+from PIL import Image  # pip install pillow
+
+# Read the CSV file with local paths
+with open('tweets_with_local_paths.csv', 'r', encoding='utf-8') as f:
+    reader = csv.DictReader(f)
+    for row in reader:
+        # Process photos
+        for i in range(1, 10):  # photo1 through photo9
+            photo_path = row.get(f'photo{i}_local_path', '')
+            if photo_path:
+                try:
+                    # Open and process the image
+                    img = Image.open(photo_path)
+                    print(f"Photo dimensions: {img.width}x{img.height}")
+                except Exception as e:
+                    print(f"Error processing {photo_path}: {e}")
+```
+
 ## Notes
 
 - Twitter has rate limits that may affect the scraping process
 - Using Apify's proxies (available on paid plans) can help avoid IP blocks
-- Be sure to comply with Twitter's Terms of Service when using scraped data 
+- Be sure to comply with Twitter's Terms of Service when using scraped data
+- Some media URLs may expire or become unavailable, which is why local downloading is useful 

@@ -31,7 +31,7 @@ client = ApifyClient(APIFY_API_TOKEN)
 
 
 def scrape_twitter_and_save_jsonl(
-    query, max_tweets, sort_by, output_base_filename="tweets", convert_to_csv=True
+    query, max_tweets, search_type, output_base_filename="tweets", convert_to_csv=True
 ):
     """
     Scrape Twitter for tweets matching the given query and save to JSONL.
@@ -47,7 +47,7 @@ def scrape_twitter_and_save_jsonl(
     Returns:
         tuple: (jsonl_path, csv_path) - Paths to the created files (csv_path may be None)
     """
-    print(f"Starting Twitter scraper for query: '{query}', sort by: {sort_by}")
+    print(f"Starting Twitter scraper for query: '{query}', sort by: {search_type}")
 
     # New Twitter Scraper actor ID
     actor_id = "ghSpYIW3L1RvT57NT"
@@ -55,7 +55,7 @@ def scrape_twitter_and_save_jsonl(
     # Prepare the actor input based on new actor's requirements
     run_input = {
         "query": query,
-        "search_type": sort_by,
+        "search_type": search_type,
         "max_posts": max_tweets,
     }
 
@@ -112,13 +112,13 @@ def scrape_twitter_and_save_jsonl(
 
 if __name__ == "__main__":
     # Configure these parameters directly
-    query = "hurricane debby"  # Your search query
-    max_tweets = 100  # Maximum number of tweets to retrieve
-    sort_by = "Latest"  # Options: "Top" or "Latest"
+    query = "BangladeshFlood"  # Your search query
+    max_tweets = 1000  # Maximum number of tweets to retrieve
+    search_type = "Top"  # Options: "Top" or "Latest"
     convert_to_csv = True  # Whether to also convert the JSONL to CSV
 
     print(
-        f"Using parameters: Query: '{query}', Max tweets: {max_tweets}, Sort by: {sort_by}"
+        f"Using parameters: Query: '{query}', Max tweets: {max_tweets}, Sort by: {search_type}"
     )
     print(
         "To use different parameters, edit the values in the __main__ section of this script"
@@ -136,7 +136,7 @@ if __name__ == "__main__":
 
     # Run the scraper and save to JSONL (and optionally to CSV)
     jsonl_file, csv_file = scrape_twitter_and_save_jsonl(
-        query, max_tweets, sort_by, convert_to_csv=convert_to_csv
+        query, max_tweets, search_type, convert_to_csv=convert_to_csv
     )
 
     if jsonl_file:

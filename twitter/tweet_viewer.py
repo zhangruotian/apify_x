@@ -415,27 +415,25 @@ def main():
         unsafe_allow_html=True,
     )
 
+    # Initialize variables
+    csv_file = ""
+    df = None
+    media_filter = "All"
+    selected_hashtag = "None"
+    selected_username = "None"
+    sort_by = "Newest first"
+    num_tweets = 10
+
     # Sidebar for file selection and filters
     with st.sidebar:
         st.header("Settings")
 
         # File selection
-        csv_file = st.text_input("CSV file path (leave empty for latest)", "")
+        default_csv_path = "./csvs/combined_tweets_with_local_paths.csv"
+        csv_file = st.text_input("CSV file path (leave empty for default)", "")
         if not csv_file:
-            latest_csv = find_latest_csv_with_local_paths()
-            if latest_csv:
-                csv_file = latest_csv
-                st.success(f"Using latest CSV file: {latest_csv}")
-
-                if "with_local_paths" not in latest_csv:
-                    st.warning(
-                        "This CSV file may not have local media paths. Some images and videos might not display."
-                    )
-            else:
-                st.error(
-                    "No CSV file found. Please run twitter_scraper.py and download_media.py first."
-                )
-                return
+            csv_file = default_csv_path
+            st.success(f"Using default CSV file: {default_csv_path}")
 
         if not os.path.exists(csv_file):
             st.error(f"CSV file not found: {csv_file}")
@@ -499,7 +497,12 @@ def main():
             )
 
             # Number of tweets to show
-            num_tweets = st.slider("Number of tweets to show:", 1, 100, 10)
+            total_tweets = len(df)
+            st.write("Number of tweets to show (0 = show all):")
+            num_tweets = st.slider("", 0, total_tweets, 10)
+            if num_tweets == 0:
+                st.text(f"Showing all {total_tweets} tweets")
+                num_tweets = None  # No limit when showing all tweets
 
         except Exception as e:
             st.error(f"Error loading CSV file: {e}")
@@ -586,7 +589,8 @@ def main():
         st.warning(f"Unable to sort: {e}")
 
     # Limit number of tweets to show
-    filtered_df = filtered_df.head(num_tweets)
+    if num_tweets is not None:  # Only limit if num_tweets is not None (i.e., not 0)
+        filtered_df = filtered_df.head(num_tweets)
 
     # Display tweet count
     if len(filtered_df) == 0:

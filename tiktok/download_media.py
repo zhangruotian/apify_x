@@ -41,8 +41,11 @@ def download_video(video_url, output_path, post_id, retries=3, timeout=30):
     for attempt in range(retries):
         try:
             headers = {
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+                "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
                 "Referer": "https://www.tiktok.com/",
+                "Accept": "video/webm,video/ogg,video/*;q=0.9,application/ogg;q=0.7,audio/*;q=0.6,*/*;q=0.5",
+                "Accept-Language": "en-US,en;q=0.5",
+                "Connection": "keep-alive",
             }
 
             response = requests.get(
@@ -164,7 +167,7 @@ def main():
     if not csv_file:
         # First look for filtered CSV files
         csvs_dir = os.path.join(os.path.dirname(__file__), "csvs")
-        filtered_files = list(Path(csvs_dir).glob("tiktok_posts_after_*.csv"))
+        filtered_files = list(Path(csvs_dir).glob("tiktok_posts_*.csv"))
 
         if filtered_files:
             # Use the most recently modified filtered file

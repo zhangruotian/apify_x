@@ -264,7 +264,7 @@ def process_csv_and_download_media(csv_file):
 
 if __name__ == "__main__":
     # Configure these parameters directly
-    csv_file = "csvs/filtered_tweets_july_2024_onwards.csv"  # Path to your CSV file
+    csv_file = "csvs/filtered_tweets_aug_to_oct_2024.csv"  # Path to your CSV file
 
     # Check if file exists before running
     if not os.path.exists(csv_file):

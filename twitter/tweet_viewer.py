@@ -429,7 +429,7 @@ def main():
         st.header("Settings")
 
         # File selection
-        default_csv_path = "./csvs/combined_tweets_with_local_paths.csv"
+        default_csv_path = "./csvs/filtered_tweets_aug_to_oct_2024_with_local_paths_20250604_133037.csv"
         csv_file = st.text_input("CSV file path (leave empty for default)", "")
         if not csv_file:
             csv_file = default_csv_path

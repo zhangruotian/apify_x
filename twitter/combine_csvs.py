@@ -3,7 +3,7 @@ import os
 import pandas as pd
 
 
-def combine_csv_files(csv_directory, output_filename="combined_tiktok_posts.csv"):
+def combine_csv_files(csv_directory, output_filename="combined_tweets.csv"):
     """
     Combines all CSV files in a specified directory into a single CSV file,
     removing duplicate records.
@@ -49,11 +49,13 @@ def combine_csv_files(csv_directory, output_filename="combined_tiktok_posts.csv"
         print(f"Combined DataFrame shape before deduplication: {combined_df.shape}")
 
         # Deduplicate
-        if "id" in combined_df.columns:
-            print("Deduplicating based on 'id' column.")
-            deduplicated_df = combined_df.drop_duplicates(subset=["id"])
+        if "tweet_id" in combined_df.columns:
+            print("Deduplicating based on 'tweet_id' column.")
+            deduplicated_df = combined_df.drop_duplicates(subset=["tweet_id"])
         else:
-            print("Warning: 'id' column not found. Deduplicating based on all columns.")
+            print(
+                "Warning: 'tweet_id' column not found. Deduplicating based on all columns."
+            )
             deduplicated_df = combined_df.drop_duplicates()
 
         print(f"Combined DataFrame shape after deduplication: {deduplicated_df.shape}")
@@ -71,16 +73,15 @@ def combine_csv_files(csv_directory, output_filename="combined_tiktok_posts.csv"
 
 
 if __name__ == "__main__":
-    csv_dir = "."  # The script will run inside the csvs directory
+    # This script is intended to be run from the root of the project directory.
+    # It combines CSV files from a specific campaign folder.
+    campaign_name = "kerala_flood"  # <--- CHANGE THIS for different campaigns
+    csv_dir = os.path.join("twitter", campaign_name, "csvs")
+    output_filename = f"combined_{campaign_name}_tweets.csv"
 
-    # Create the directory if it doesn't exist (useful if running standalone)
-    if not os.path.exists(csv_dir):
-        os.makedirs(csv_dir)
-        print(f"Created directory: {csv_dir}")
-        print("Please add your CSV files to this directory and run the script again.")
+    # Check if the directory exists
+    if not os.path.isdir(csv_dir):
+        print(f"Error: The directory '{csv_dir}' does not exist.")
+        print("Please run the scraper first to generate CSV files for the campaign.")
     else:
-        combined_file_path = combine_csv_files(csv_dir)
-        if combined_file_path:
-            print(f"Successfully created: {combined_file_path}")
-        else:
-            print("Failed to combine CSV files.")
+        combine_csv_files(csv_dir, output_filename=output_filename)

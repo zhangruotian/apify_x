@@ -6,12 +6,13 @@ import json
 import os
 
 
-def convert_jsonl_to_csv(jsonl_path):
+def convert_jsonl_to_csv(jsonl_path, output_csv_dir=None):
     """
     Convert a JSONL file of TikTok posts to a CSV file.
 
     Args:
         jsonl_path (str): Path to the JSONL file with TikTok data
+        output_csv_dir (str): Optional. Directory to save the output CSV file.
 
     Returns:
         str: Path to the created CSV file
@@ -20,8 +21,14 @@ def convert_jsonl_to_csv(jsonl_path):
         print(f"Error: File {jsonl_path} not found")
         return None
 
-    # Create CSV file path with same base name as JSONL file
-    csv_path = jsonl_path.replace(".jsonl", ".csv")
+    # Create CSV file path
+    base_name = os.path.basename(jsonl_path)
+    csv_filename = base_name.replace(".jsonl", ".csv")
+    if output_csv_dir:
+        os.makedirs(output_csv_dir, exist_ok=True)
+        csv_path = os.path.join(output_csv_dir, csv_filename)
+    else:
+        csv_path = jsonl_path.replace(".jsonl", ".csv")
 
     # Define CSV headers based on TikTok data structure
     csv_headers = [

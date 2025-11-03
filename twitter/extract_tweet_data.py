@@ -268,7 +268,9 @@ def flatten_tweet(tweet):
     return flat_tweet
 
 
-def process_jsonl_to_csv(input_file, output_file=None, verbose=False):
+def process_jsonl_to_csv(
+    input_file, output_file=None, verbose=False, output_csv_dir=None
+):
     """
     Process a JSONL file of tweets and write to a CSV file.
 
@@ -276,6 +278,7 @@ def process_jsonl_to_csv(input_file, output_file=None, verbose=False):
         input_file: Path to the input JSONL file
         output_file: Path to the output CSV file (optional, will generate based on input if not provided)
         verbose: Whether to show detailed processing information
+        output_csv_dir: Directory to save the CSV file in (optional)
 
     Returns:
         str: Path to the created CSV file
@@ -290,6 +293,12 @@ def process_jsonl_to_csv(input_file, output_file=None, verbose=False):
         timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
         basename = os.path.splitext(os.path.basename(input_file))[0]
         output_file = f"{basename}_csv_{timestamp}.csv"
+
+    # If an output directory is specified, join it with the filename
+    if output_csv_dir:
+        # Ensure the output directory exists
+        os.makedirs(output_csv_dir, exist_ok=True)
+        output_file = os.path.join(output_csv_dir, os.path.basename(output_file))
 
     # Read all tweets first to build a complete list of columns
     all_tweets = []
@@ -398,7 +407,9 @@ def process_jsonl_to_csv(input_file, output_file=None, verbose=False):
     return output_file
 
 
-def convert_jsonl_to_csv(input_file=None, output_file=None, verbose=False):
+def convert_jsonl_to_csv(
+    input_file=None, output_file=None, verbose=False, output_csv_dir=None
+):
     """
     Convert JSONL to CSV format with easy-to-use function signature for importing.
     This is the main function that should be imported by other scripts.
@@ -407,6 +418,7 @@ def convert_jsonl_to_csv(input_file=None, output_file=None, verbose=False):
         input_file: Path to the input JSONL file
         output_file: Path to the output CSV file (optional)
         verbose: Whether to show detailed processing information
+        output_csv_dir: Directory to save the CSV file in (optional)
 
     Returns:
         str: Path to the created CSV file or None if failed
@@ -416,7 +428,9 @@ def convert_jsonl_to_csv(input_file=None, output_file=None, verbose=False):
         print("Error: No input file specified.")
         return None
 
-    output_file = process_jsonl_to_csv(input_file, output_file, verbose)
+    output_file = process_jsonl_to_csv(
+        input_file, output_file, verbose, output_csv_dir=output_csv_dir
+    )
 
     if output_file:
         print(f"\nConversion complete! CSV file saved to: {output_file}")

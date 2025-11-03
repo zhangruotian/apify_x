@@ -130,11 +130,18 @@ st.markdown(
     }
     /* Make dividers more visible */
     hr {
-        height: 2px !important;
-        background-color: #888 !important;
+        height: 3px !important;
+        background-color: #1DA1F2 !important;
         border: none !important;
-        margin-top: 20px !important;
-        margin-bottom: 20px !important;
+        margin-top: 30px !important;
+        margin-bottom: 30px !important;
+        width: 60% !important;
+        margin-left: auto !important;
+        margin-right: auto !important;
+    }
+    /* Add more space between tweets */
+    .element-container {
+        margin-bottom: 20px;
     }
     </style>
     """,
@@ -232,34 +239,20 @@ def get_base64_video(video_path):
 
 
 def display_tweet(row):
-    """Display a tweet with its text, media, and metadata."""
+    """Display a tweet with only text and media content."""
     # Extract data from row
-    tweet_id = row.get("tweet_id", "Unknown")
-    screen_name = row.get("screen_name", "Unknown")
-    name = row.get("user_name", screen_name)
     text = row.get("text", "No text")
-    created_at = row.get("created_at", "")
-    favorites = row.get("favorites", 0)
-    retweets = row.get("retweets", 0)
-    replies = row.get("replies", 0)
 
     # Get media paths
     photo_paths, video_paths = get_local_media_paths(row)
-
-    # Get hashtags, links, mentions
-    hashtags = get_hashtags(row)
-    links = get_links(row)
-    mentions = get_mentions(row)
 
     # Start the frame container for the entire tweet
     with st.container():
         # Open the frame div that will contain ALL tweet content
         st.markdown(
             f"""
-        <div style="border: 1px solid #1DA1F2; border-radius: 8px; padding: 15px; margin-bottom: 20px; text-align: center; background-color: #f8f9fa;">
-            <div style="font-weight: bold; text-align: center;">@{screen_name} - {name}</div>
-            <div style="margin: 10px 0; text-align: center;">{text}</div>
-            <div style="color: #657786; font-size: 14px; text-align: center;">{created_at}</div>
+        <div style="border: 2px solid #1DA1F2; border-radius: 8px; padding: 20px; margin-bottom: 30px; text-align: center; background-color: white; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+            <div style="margin: 10px 0; text-align: center; font-size: 16px; line-height: 1.5; color: #333;">{text}</div>
         """,
             unsafe_allow_html=True,
         )
@@ -301,7 +294,10 @@ def display_tweet(row):
                             # Use explicit centering but not full column width
                             st.image(image, use_container_width=False)
                         else:
-                            st.warning(f"Image file not found: {photo_path}")
+                            st.error(
+                                f"📸 Image missing: {os.path.basename(photo_path)}"
+                            )
+                            st.caption(f"Path: {photo_path}")
                 except Exception as e:
                     st.error(f"Error displaying image: {e}")
 
@@ -326,51 +322,12 @@ def display_tweet(row):
                             # Display video with a limited width and centered
                             st.video(video_bytes, start_time=0)
                     else:
-                        st.warning(f"Video file not found: {video_path}")
+                        st.error(f"🎥 Video missing: {os.path.basename(video_path)}")
+                        st.caption(f"Path: {video_path}")
                 except Exception as e:
                     st.error(f"Error displaying video: {e}")
 
             st.markdown("</div>", unsafe_allow_html=True)
-
-        # Now add HTML content for stats, hashtags, links, ID inside the frame
-        html_content = []
-
-        # Add statistics
-        html_content.append(
-            f"""
-            <div style="margin-top: 10px; text-align: center;">
-                ❤️ {favorites} Likes • 
-                🔁 {retweets} Retweets • 
-                💬 {replies} Replies
-            </div>
-        """
-        )
-
-        # Add hashtags
-        if hashtags:
-            html_content.append(
-                "<div style='text-align: center; margin-top: 10px;'><strong>Hashtags:</strong> "
-                + ", ".join([f"#{tag}" for tag in hashtags])
-                + "</div>"
-            )
-
-        # Add links
-        if links:
-            html_content.append(
-                "<div style='text-align: center; margin-top: 10px;'><strong>Links:</strong></div>"
-            )
-            for link in links:
-                html_content.append(
-                    f"<div style='text-align: center;'><a href='{link}'>{link}</a></div>"
-                )
-
-        # Add Tweet ID
-        html_content.append(
-            f"<div style='text-align: center; margin-top: 10px;'><small>Tweet ID: {tweet_id}</small></div>"
-        )
-
-        # Add all the HTML content to the frame
-        st.markdown("\n".join(html_content), unsafe_allow_html=True)
 
         # Close the framed div that contains everything
         st.markdown("</div>", unsafe_allow_html=True)
@@ -378,8 +335,9 @@ def display_tweet(row):
 
 def main():
     """Main function to run the Streamlit app."""
-    st.title("Tweet Viewer 🐦")
-    st.markdown("### View tweets with their text, images, videos, and metadata")
+    st.title("🧹 Cleaned Tweet Viewer 🐦")
+    st.markdown("### View AI-filtered flood disaster tweets")
+    st.markdown("*Simple view: text and media only*")
 
     # Center the content
     st.markdown(
@@ -418,9 +376,6 @@ def main():
     # Initialize variables
     csv_file = ""
     df = None
-    media_filter = "All"
-    selected_hashtag = "None"
-    selected_username = "None"
     sort_by = "Newest first"
     num_tweets = 10
 
@@ -428,61 +383,73 @@ def main():
     with st.sidebar:
         st.header("Settings")
 
-        # File selection
-        default_csv_path = "./csvs/filtered_tweets_aug_to_oct_2024_with_local_paths_20250604_133037.csv"
-        csv_file = st.text_input("CSV file path (leave empty for default)", "")
+        # Dataset selection
+        st.subheader("📊 Select Dataset")
+        dataset_options = {
+            "Assam Flood (Cleaned)": "twitter/assam_flood/csvs/cleaned_assam_flood_tweets.csv",
+            "Bangladesh Flood (Cleaned)": "twitter/bangladesh_flood/csvs/cleaned_bangladesh_flood_tweets.csv",
+            "Kerala Flood (Cleaned)": "twitter/kerala_flood/csvs/cleaned_kerala_flood_tweets.csv",
+            "Pakistan Flood (Cleaned)": "twitter/pakistan_flood/csvs/cleaned_pakistan_flood_tweets.csv",
+            "Custom Path": "custom",
+        }
+
+        selected_dataset = st.selectbox("Choose dataset:", list(dataset_options.keys()))
+
+        if selected_dataset == "Custom Path":
+            csv_file = st.text_input("CSV file path:", "")
+        else:
+            csv_file = dataset_options[selected_dataset]
+            st.success(f"Selected: {selected_dataset}")
+            st.info(f"Path: {csv_file}")
+
         if not csv_file:
-            csv_file = default_csv_path
-            st.success(f"Using default CSV file: {default_csv_path}")
+            st.warning("Please select a dataset or enter a custom path.")
+            return
 
         if not os.path.exists(csv_file):
             st.error(f"CSV file not found: {csv_file}")
+            st.info("💡 Make sure you have run the cleaning process first!")
             return
 
         # Load the data
         try:
             df = pd.read_csv(csv_file)
-            st.info(f"Loaded {len(df)} tweets")
+            st.success(f"✅ Loaded {len(df)} cleaned tweets")
 
-            # Filter options
-            st.subheader("Filters")
+            # Show dataset statistics
+            st.subheader("📈 Dataset Info")
 
-            # Filter by media type
-            media_filter = st.selectbox(
-                "Show tweets with:",
-                [
-                    "All",
-                    "Photos only",
-                    "Videos only",
-                    "Both photos and videos",
-                    "No media",
-                ],
-            )
+            # Count media files
+            photo_count = 0
+            video_count = 0
+            for _, row in df.iterrows():
+                photo_paths, video_paths = get_local_media_paths(row)
+                photo_count += len(photo_paths)
+                video_count += len(video_paths)
 
-            # Filter by hashtag
-            all_hashtags = []
-            for i in range(1, 11):
-                col = f"hashtag{i}"
-                if col in df.columns:
-                    hashtags = df[col].dropna().unique().tolist()
-                    all_hashtags.extend([h for h in hashtags if h])
+            # Display stats
+            col1, col2 = st.columns(2)
+            with col1:
+                st.metric("📄 Total Tweets", len(df))
+                st.metric("📸 Total Photos", photo_count)
+            with col2:
+                st.metric("🎥 Total Videos", video_count)
 
-            all_hashtags = sorted(list(set(all_hashtags)))
-            if all_hashtags:
-                selected_hashtag = st.selectbox(
-                    "Filter by hashtag:", ["None"] + all_hashtags
+            # Check if this is a cleaned dataset
+            if "cleaned_" in csv_file:
+                st.info(
+                    "🧹 This is a cleaned dataset (AI-filtered for flood disasters)"
                 )
-            else:
-                selected_hashtag = "None"
 
-            # Filter by username
-            all_usernames = sorted(df["screen_name"].dropna().unique().tolist())
-            if all_usernames:
-                selected_username = st.selectbox(
-                    "Filter by username:", ["None"] + all_usernames
-                )
-            else:
-                selected_username = "None"
+                # Check for classification log
+                log_path = csv_file.replace(".csv", "_classification_log.json")
+                if os.path.exists(log_path):
+                    st.success("📜 Classification log available")
+                else:
+                    st.warning("📜 Classification log not found")
+
+            # Sorting options only
+            st.subheader("Display Options")
 
             # Show tweets with most engagement
             sort_by = st.selectbox(
@@ -508,69 +475,8 @@ def main():
             st.error(f"Error loading CSV file: {e}")
             return
 
-    # Apply filters
+    # Apply sorting only (no filters)
     filtered_df = df.copy()
-
-    # Filter by media type
-    if media_filter == "Photos only":
-        # Check if any photo column has a value
-        has_photos = False
-        for i in range(1, 10):
-            col = f"photo{i}_local_path"
-            if col in filtered_df.columns:
-                has_photos |= filtered_df[col].notna() & (filtered_df[col] != "")
-        filtered_df = filtered_df[has_photos]
-    elif media_filter == "Videos only":
-        # Check if any video column has a value
-        has_videos = False
-        for i in range(1, 6):
-            col = f"video{i}_local_path"
-            if col in filtered_df.columns:
-                has_videos |= filtered_df[col].notna() & (filtered_df[col] != "")
-        filtered_df = filtered_df[has_videos]
-    elif media_filter == "Both photos and videos":
-        # Check if any photo column and any video column have values
-        has_photos = False
-        for i in range(1, 10):
-            col = f"photo{i}_local_path"
-            if col in filtered_df.columns:
-                has_photos |= filtered_df[col].notna() & (filtered_df[col] != "")
-
-        has_videos = False
-        for i in range(1, 6):
-            col = f"video{i}_local_path"
-            if col in filtered_df.columns:
-                has_videos |= filtered_df[col].notna() & (filtered_df[col] != "")
-
-        filtered_df = filtered_df[has_photos & has_videos]
-    elif media_filter == "No media":
-        # Check if no photo column and no video column have values
-        has_photos = False
-        for i in range(1, 10):
-            col = f"photo{i}_local_path"
-            if col in filtered_df.columns:
-                has_photos |= filtered_df[col].notna() & (filtered_df[col] != "")
-
-        has_videos = False
-        for i in range(1, 6):
-            col = f"video{i}_local_path"
-            if col in filtered_df.columns:
-                has_videos |= filtered_df[col].notna() & (filtered_df[col] != "")
-
-        filtered_df = filtered_df[~(has_photos | has_videos)]
-
-    # Filter by hashtag
-    if selected_hashtag != "None":
-        has_hashtag = False
-        for i in range(1, 11):
-            col = f"hashtag{i}"
-            if col in filtered_df.columns:
-                has_hashtag |= filtered_df[col] == selected_hashtag
-        filtered_df = filtered_df[has_hashtag]
-
-    # Filter by username
-    if selected_username != "None":
-        filtered_df = filtered_df[filtered_df["screen_name"] == selected_username]
 
     # Sort by selected option
     try:
@@ -594,23 +500,70 @@ def main():
 
     # Display tweet count
     if len(filtered_df) == 0:
-        st.warning("No tweets match the selected filters.")
+        st.warning("No tweets found in the dataset.")
         return
 
-    st.markdown(f"### Showing {len(filtered_df)} tweets")
+    st.markdown(f"### 📋 Showing {len(filtered_df)} tweets")
+    st.markdown("---")
 
-    # Display each tweet with dividers between them (but not after the last one)
+    # Display each tweet with clear separators and numbering
     for i, (_, row) in enumerate(filtered_df.iterrows()):
+        # Add tweet number indicator
+        st.markdown(
+            f"""
+            <div style="text-align: center; margin: 20px 0 10px 0;">
+                <span style="background-color: #1DA1F2; color: white; padding: 5px 12px; border-radius: 15px; font-size: 14px; font-weight: bold;">
+                    Tweet {i + 1}
+                </span>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
         display_tweet(row)
-        # Add a divider only if it's not the last tweet
+
+        # Add a clear separator between tweets (but not after the last one)
         if i < len(filtered_df) - 1:
-            st.divider()
+            st.markdown(
+                """
+                <div style="margin: 40px 0; border-top: 3px solid #1DA1F2; width: 60%; margin-left: auto; margin-right: auto;"></div>
+                """,
+                unsafe_allow_html=True,
+            )
+
+    # Add end marker
+    st.markdown(
+        """
+        <div style="text-align: center; margin: 50px 0 30px 0;">
+            <span style="background-color: #28a745; color: white; padding: 8px 16px; border-radius: 20px; font-size: 14px; font-weight: bold;">
+                ✅ End of Tweets
+            </span>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
     # Add footer
     st.markdown("---")
     st.markdown(
-        "Built with Streamlit • Data collected using twitter_scraper.py and download_media.py"
+        "🛠️ Built with Streamlit • 🤖 AI-filtered using OpenAI • 📊 Data collected and cleaned using twitter_scraper.py"
     )
+
+    # Add info about the cleaning process
+    with st.expander("ℹ️ About the Data"):
+        st.markdown(
+            """
+        **This dataset contains:**
+        - AI-filtered flood disaster tweets
+        - Text content and associated media files
+        - High-quality, verified flood-related content only
+        
+        **Cleaning process:**
+        - Each tweet analyzed by GPT-4o-mini
+        - Non-flood content automatically filtered out
+        - Only genuine flood disasters kept
+        """
+        )
 
 
 if __name__ == "__main__":

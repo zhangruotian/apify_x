@@ -3,7 +3,6 @@
 Check which tweets in the CSV file have different types of media (photos, videos).
 This script works with the CSV format that uses dedicated columns for each media item.
 """
-
 import csv
 import glob
 import os

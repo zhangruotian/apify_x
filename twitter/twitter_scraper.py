@@ -31,7 +31,7 @@ client = ApifyClient(APIFY_API_TOKEN)
 
 
 def scrape_twitter_and_save_jsonl(
-    query, max_tweets, search_type, output_base_filename="tweets", convert_to_csv=True
+    query, max_tweets, search_type, output_dir="bangladesh_flood", convert_to_csv=True
 ):
     """
     Scrape Twitter for tweets matching the given query and save to JSONL.
@@ -41,7 +41,7 @@ def scrape_twitter_and_save_jsonl(
         query (str): Search query for Twitter
         max_tweets (int): Maximum number of tweets to retrieve
         sort_by (str): Sort type - "Top" or "Latest"
-        output_base_filename (str): Base name for the output file
+        output_dir (str): Directory to save the output files (e.g., "assam_flood")
         convert_to_csv (bool): Whether to also convert the JSONL to CSV
 
     Returns:
@@ -59,9 +59,17 @@ def scrape_twitter_and_save_jsonl(
         "max_posts": max_tweets,
     }
 
-    # Create timestamp and output path
+    # Create timestamp and output paths
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-    jsonl_path = f"{output_base_filename}_{timestamp}.jsonl"
+
+    # Ensure the output directories exist
+    json_dir = os.path.join(output_dir, "jsons")
+    csv_dir = os.path.join(output_dir, "csvs")
+    os.makedirs(json_dir, exist_ok=True)
+    os.makedirs(csv_dir, exist_ok=True)
+
+    base_filename = f"{query}_{timestamp}"
+    jsonl_path = os.path.join(json_dir, f"{base_filename}.jsonl")
 
     try:
         # Run the actor and wait for it to finish
@@ -101,7 +109,7 @@ def scrape_twitter_and_save_jsonl(
         csv_path = None
         if convert_to_csv and CSV_CONVERSION_AVAILABLE and count > 0:
             print("\nConverting JSONL to CSV with dedicated media columns...")
-            csv_path = convert_jsonl_to_csv(jsonl_path)
+            csv_path = convert_jsonl_to_csv(jsonl_path, output_csv_dir=csv_dir)
 
         return jsonl_path, csv_path
 
@@ -111,17 +119,26 @@ def scrape_twitter_and_save_jsonl(
 
 
 if __name__ == "__main__":
-    # Configure these parameters directly
-    query = "BangladeshFlood"  # Your search query
-    max_tweets = 1000  # Maximum number of tweets to retrieve
+    # --- Configuration ---
+    # This script scrapes tweets for a specific campaign.
+    campaign_name = "kerala_flood"  # <--- Change this for a new campaign
+    query = "WayanadFlood"  # <--- Change this to the desired search query for the campaign
+    max_tweets = 3000  # Maximum number of tweets to retrieve
     search_type = "Top"  # Options: "Top" or "Latest"
     convert_to_csv = True  # Whether to also convert the JSONL to CSV
+    # -------------------
 
+    # Define the main output directory for the campaign.
+    # The `scrape_twitter_and_save_jsonl` function will create this directory
+    # and its subdirectories ('jsons', 'csvs') if they don't exist.
+    output_dir = os.path.join("twitter", campaign_name)
+
+    print(f"Starting scraper for campaign: '{campaign_name}' with query: '{query}'")
     print(
-        f"Using parameters: Query: '{query}', Max tweets: {max_tweets}, Sort by: {search_type}"
+        f"Using parameters: Max tweets: {max_tweets}, Sort by: {search_type}, Output to: '{output_dir}'"
     )
     print(
-        "To use different parameters, edit the values in the __main__ section of this script"
+        "To use different parameters, edit the configuration in the __main__ section of this script"
     )
 
     # Check if API token is available
@@ -136,7 +153,11 @@ if __name__ == "__main__":
 
     # Run the scraper and save to JSONL (and optionally to CSV)
     jsonl_file, csv_file = scrape_twitter_and_save_jsonl(
-        query, max_tweets, search_type, convert_to_csv=convert_to_csv
+        query,
+        max_tweets,
+        search_type,
+        output_dir=output_dir,
+        convert_to_csv=convert_to_csv,
     )
 
     if jsonl_file:

@@ -5,7 +5,6 @@ This app reads the CSV file created by tiktok_scraper.py and extract_tiktok_data
 """
 
 import os
-from pathlib import Path
 
 import pandas as pd
 import streamlit as st
@@ -18,99 +17,79 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
+# Define dataset paths relative to the project root
+DATASETS = {
+    "🌊 All Floods Combined": {
+        "csv_path": "tiktok/combined_all_floods.csv",
+        "video_dir": "combined",  # Special handling needed for combined dataset
+    },
+    "Bangladesh Flood": {
+        "csv_path": "tiktok/bangladesh_flood/csvs/tiktok_posts_20240801_to_20241031_with_local_paths.csv",
+        "video_dir": "tiktok/bangladesh_flood/videos",
+    },
+    "Assam Flood": {
+        "csv_path": "tiktok/assam_flood/csvs/filtered_assam_flood_posts_20240501_20241120_with_local_paths.csv",
+        "video_dir": "tiktok/assam_flood/videos",
+    },
+    "Kerala Flood": {
+        "csv_path": "tiktok/kerala_flood/csvs/filtered_kerala_flood_posts_20240715_20241101_with_local_paths.csv",
+        "video_dir": "tiktok/kerala_flood/videos",
+    },
+    "Pakistan Flood": {
+        "csv_path": "tiktok/pakistan_flood/csvs/filtered_pakistan_flood_posts_20220601_20230101_with_local_paths.csv",
+        "video_dir": "tiktok/pakistan_flood/videos",
+    },
+    "South Asia Flood": {
+        "csv_path": "tiktok/south_asia_flood/csvs/filtered_south_asia_flood_posts_with_local_paths.csv",
+        "video_dir": "tiktok/south_asia_flood/videos",
+    },
+}
+
 # Add CSS for better styling
 st.markdown(
     """
     <style>
     .tiktok-container {
-        border: 1px solid #ddd;
-        border-radius: 10px;
+        border: 2px solid #25F4EE;
+        border-radius: 15px;
         padding: 15px;
-        margin-bottom: 30px;
-        background-color: white;
-        max-width: 550px;
+        margin-bottom: 20px;
+        background-color: #fafafa;
+        max-width: 500px;
         margin-left: auto;
         margin-right: auto;
         text-align: center;
         display: flex;
         flex-direction: column;
         align-items: center;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        box-shadow: 0 4px 12px rgba(37, 244, 238, 0.2);
     }
     .tiktok-title {
         font-size: 18px;
-        font-weight: 500;
-        margin-bottom: 10px;
-        text-align: center;
-    }
-    .tiktok-header {
-        display: flex;
-        align-items: center;
-        margin-bottom: 10px;
-        justify-content: center;
-        width: 100%;
-    }
-    .tiktok-channel {
-        display: flex;
-        align-items: center;
-        justify-content: center;
+        font-weight: 600;
         margin-bottom: 15px;
-    }
-    .tiktok-channel-avatar {
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
-        margin-right: 10px;
-    }
-    .tiktok-channel-info {
-        text-align: left;
-    }
-    .tiktok-channel-name {
-        font-weight: bold;
-        font-size: 16px;
-    }
-    .tiktok-channel-username {
-        color: #777;
-        font-size: 14px;
-    }
-    .tiktok-meta {
-        color: #657786;
-        font-size: 14px;
-        margin-bottom: 10px;
         text-align: center;
-    }
-    .tiktok-stats {
-        display: flex;
-        justify-content: space-around;
-        color: #657786;
-        font-size: 14px;
-        margin-top: 15px;
-        width: 100%;
-    }
-    .stat {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-    }
-    .stat-value {
-        font-weight: bold;
-        margin-bottom: 5px;
-    }
-    .stat-label {
-        color: #888;
+        color: #333;
+        line-height: 1.4;
     }
     .hashtag {
         color: #25F4EE;
         font-weight: 500;
     }
-    /* Center and fix width for videos */
+    /* Center and fix width for videos - smaller size */
     .stVideo {
         display: flex !important;
         justify-content: center !important;
     }
     .stVideo > div {
-        max-width: 320px !important;
+        max-width: 300px !important;
+        max-height: 400px !important;
         margin: 0 auto !important;
+    }
+    .stVideo video {
+        max-width: 300px !important;
+        max-height: 400px !important;
+        object-fit: contain !important;
     }
     /* Fix for all media to be centered */
     [data-testid="column"] {
@@ -134,51 +113,42 @@ st.markdown(
         align-items: center !important;
         width: 100% !important;
     }
-    /* Make dividers more visible */
-    hr {
-        height: 2px !important;
-        background-color: #888 !important;
-        border: none !important;
-        margin-top: 20px !important;
-        margin-bottom: 20px !important;
-    }
-    /* TikTok colors for stats */
-    .likes {
-        color: #EE1D52;
-    }
-    .comments {
-        color: #25F4EE;
-    }
-    .shares {
-        color: #4DE3E0;
-    }
-    .views {
-        color: #999999;
-    }
+
+
     </style>
     """,
     unsafe_allow_html=True,
 )
 
 
-def find_latest_csv():
-    """Find the most recent CSV file in the csvs directory."""
-    csvs_dir = os.path.join(os.path.dirname(__file__), "csvs")
-
-    # First try to find a filtered CSV file
-    filtered_files = list(Path(csvs_dir).glob("tiktok_posts_20240801_to_20241031.csv"))
-    if filtered_files:
-        return str(max(filtered_files, key=os.path.getmtime))
-
-
-    return None
-
-
-def get_video_path(post_id):
+def get_video_path(post_id, video_dir, row=None):
     """Get the local path to a video file based on its ID."""
-    video_dir = os.path.join(os.path.dirname(__file__), "media", "videos")
-    video_path = os.path.join(video_dir, f"tiktok_{post_id}.mp4")
+    # Handle combined dataset with distributed videos
+    if video_dir == "combined" and row is not None:
+        # Use the video_local_path from the CSV if available
+        if "video_local_path" in row and pd.notna(row["video_local_path"]):
+            video_path = row["video_local_path"]
+            if os.path.exists(video_path):
+                return video_path
 
+        # # Fallback: try to find the video in all possible directories
+        # possible_dirs = [
+        #     "tiktok/bangladesh_flood/videos",
+        #     "tiktok/assam_flood/videos",
+        #     "tiktok/kerala_flood/videos",
+        #     "tiktok/pakistan_flood/videos",
+        #     "tiktok/south_asia_flood/videos",
+        # ]
+
+        # for dir_path in possible_dirs:
+        #     video_path = os.path.join(dir_path, f"tiktok_{post_id}.mp4")
+        #     if os.path.exists(video_path):
+        #         return video_path
+
+        return None
+
+    # Standard handling for individual datasets
+    video_path = os.path.join(video_dir, f"tiktok_{post_id}.mp4")
     if os.path.exists(video_path):
         return video_path
 
@@ -199,120 +169,79 @@ def format_number(num):
         return str(int(num))
 
 
-def display_tiktok_post(row):
-    """Display a TikTok post with its video and metadata."""
-    # Extract data from row
+def display_tiktok_post(row, video_dir):
+    """Display a simplified TikTok post with only text, video, and hashtags."""
+    # Extract only the essential data
     post_id = row.get("id", "Unknown")
     title = row.get("title", "")
-    views = row.get("views", 0)
-    likes = row.get("likes", 0)
-    comments = row.get("comments", 0)
-    shares = row.get("shares", 0)
-    bookmarks = row.get("bookmarks", 0)
     hashtags = row.get("hashtags", "")
-    uploaded_at = row.get("uploaded_at_formatted", "")
-
-    # Extract channel info
-    channel_name = row.get("channel_name", "")
-    channel_username = row.get("channel_username", "")
-    channel_avatar = row.get("channel_avatar", "")
-    channel_url = row.get("channel_url", "")
-    channel_verified = row.get("channel_verified", False)
+    event = row.get("event", "")
 
     # Get local video path
-    video_path = get_video_path(post_id)
+    video_path = get_video_path(post_id, video_dir, row)
 
     # Start the container for the entire post
     with st.container():
         # Open the frame div
         st.markdown(
-            f"""
+            """
             <div class="tiktok-container">
-                <div class="tiktok-header">
-                    <div class="tiktok-title">{title}</div>
-                </div>
             """,
             unsafe_allow_html=True,
         )
 
-        # Display channel info
-        st.markdown(
-            f"""
-            <div class="tiktok-channel">
-                <img src="{channel_avatar}" class="tiktok-channel-avatar" onerror="this.src='https://via.placeholder.com/40'">
-                <div class="tiktok-channel-info">
-                    <div class="tiktok-channel-name">
-                        {channel_name} {"✓" if channel_verified else ""}
-                    </div>
-                    <div class="tiktok-channel-username">@{channel_username}</div>
-                </div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
+        # Display event badge (if available) - small and subtle
+        if event:
+            st.markdown(
+                f'<div style="margin-bottom: 15px; text-align: center;"><small style="background-color: #25F4EE; color: white; padding: 4px 8px; border-radius: 12px; font-size: 12px;">📍 {event}</small></div>',
+                unsafe_allow_html=True,
+            )
 
-        # Display video if available
+        # Display title text
+        if title:
+            st.markdown(
+                f'<div class="tiktok-title">{title}</div>',
+                unsafe_allow_html=True,
+            )
+
+        # Display video if available - small and consistent size
         if video_path:
             try:
                 video_file = open(video_path, "rb")
                 video_bytes = video_file.read()
-                # Center the video with columns
+                # Center the video with fixed small size
                 col1, col2, col3 = st.columns([1, 2, 1])
                 with col2:
+                    # Use a container to control video size
+                    st.markdown(
+                        '<div style="max-width: 300px; margin: 0 auto;">',
+                        unsafe_allow_html=True,
+                    )
                     st.video(video_bytes, start_time=0)
+                    st.markdown("</div>", unsafe_allow_html=True)
+                video_file.close()
             except Exception as e:
                 st.error(f"Error displaying video: {e}")
         else:
-            st.warning("Video not downloaded. Run download_media.py first.")
+            st.markdown(
+                '<div style="padding: 20px; background-color: #f0f0f0; border-radius: 10px; color: #666; text-align: center; margin: 15px auto; max-width: 300px;">📹 Video not available</div>',
+                unsafe_allow_html=True,
+            )
 
         # Display hashtags
         if hashtags and isinstance(hashtags, str):
             hashtag_list = hashtags.split(",")
-            hashtag_html = ", ".join([f"#{tag.strip()}" for tag in hashtag_list])
+            hashtag_html = " ".join(
+                [
+                    f'<span style="color: #25F4EE; font-weight: 500;">#{tag.strip()}</span>'
+                    for tag in hashtag_list
+                    if tag.strip()
+                ]
+            )
             st.markdown(
-                f'<div style="margin: 10px 0; text-align: center;">{hashtag_html}</div>',
+                f'<div style="margin-top: 15px; text-align: center; font-size: 14px; line-height: 1.4;">{hashtag_html}</div>',
                 unsafe_allow_html=True,
             )
-
-        # Display upload date
-        if uploaded_at:
-            st.markdown(
-                f'<div class="tiktok-meta">{uploaded_at}</div>',
-                unsafe_allow_html=True,
-            )
-
-        # Display stats
-        st.markdown(
-            f"""
-            <div class="tiktok-stats">
-                <div class="stat">
-                    <div class="stat-value views">{format_number(views)}</div>
-                    <div class="stat-label">Views</div>
-                </div>
-                <div class="stat">
-                    <div class="stat-value likes">{format_number(likes)}</div>
-                    <div class="stat-label">Likes</div>
-                </div>
-                <div class="stat">
-                    <div class="stat-value comments">{format_number(comments)}</div>
-                    <div class="stat-label">Comments</div>
-                </div>
-                <div class="stat">
-                    <div class="stat-value shares">{format_number(shares)}</div>
-                    <div class="stat-label">Shares</div>
-                </div>
-                <div class="stat">
-                    <div class="stat-value">{format_number(bookmarks)}</div>
-                    <div class="stat-label">Bookmarks</div>
-                </div>
-            </div>
-            
-            <div style="text-align: center; margin-top: 10px;">
-                <small>Post ID: {post_id}</small>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
 
         # Close the container div
         st.markdown("</div>", unsafe_allow_html=True)
@@ -346,10 +275,8 @@ def main():
 
     # Initialize variables
     csv_file = ""
+    video_dir = ""
     df = None
-    has_video = "All posts"
-    selected_hashtag = "None"
-    selected_username = "None"
     sort_by = "Most views"
     num_posts = 10
 
@@ -357,13 +284,21 @@ def main():
     with st.sidebar:
         st.header("Settings")
 
-        # File selection
-        default_csv_path = find_latest_csv()
-        csv_file = st.text_input("CSV file path", value=default_csv_path or "")
+        # Dataset selection
+        selected_dataset = st.selectbox(
+            "Select a dataset to view:", list(DATASETS.keys())
+        )
+
+        if selected_dataset:
+            dataset_info = DATASETS[selected_dataset]
+            csv_file = dataset_info["csv_path"]
+            video_dir = dataset_info["video_dir"]
 
         if not csv_file:
-            st.error("No CSV file found or specified")
+            st.error("Please select a dataset.")
             return
+
+        st.info(f"Dataset: {selected_dataset}")
 
         if not os.path.exists(csv_file):
             st.error(f"CSV file not found: {csv_file}")
@@ -374,43 +309,8 @@ def main():
             df = pd.read_csv(csv_file)
             st.info(f"Loaded {len(df)} TikTok posts")
 
-            # Filter options
-            st.subheader("Filters")
-
-            # Filter by video availability
-            has_video = st.selectbox(
-                "Show posts:",
-                [
-                    "All posts",
-                    "Only posts with downloaded videos",
-                ],
-            )
-
-            # Filter by hashtag
-            if "hashtags" in df.columns:
-                # Extract all hashtags from the comma-separated lists
-                all_hashtags = set()
-                for hashtags_str in df["hashtags"].dropna():
-                    if hashtags_str:
-                        all_hashtags.update(
-                            [tag.strip() for tag in hashtags_str.split(",")]
-                        )
-
-                all_hashtags = sorted(list(all_hashtags))
-                if all_hashtags:
-                    selected_hashtag = st.selectbox(
-                        "Filter by hashtag:", ["None"] + all_hashtags
-                    )
-
-            # Filter by username
-            if "channel_username" in df.columns:
-                all_usernames = sorted(
-                    df["channel_username"].dropna().unique().tolist()
-                )
-                if all_usernames:
-                    selected_username = st.selectbox(
-                        "Filter by username:", ["None"] + all_usernames
-                    )
+            # Display options
+            st.subheader("Display Options")
 
             # Sort options
             sort_by = st.selectbox(
@@ -437,30 +337,8 @@ def main():
             st.error(f"Error loading CSV file: {e}")
             return
 
-    # Apply filters
+    # Start with full dataset (no filters)
     filtered_df = df.copy()
-
-    # Filter by video availability
-    if has_video == "Only posts with downloaded videos":
-        # Create a new column indicating if the video is available locally
-        filtered_df["has_local_video"] = filtered_df["id"].apply(
-            lambda x: os.path.exists(
-                os.path.join(
-                    os.path.dirname(__file__), "media", "videos", f"tiktok_{x}.mp4"
-                )
-            )
-        )
-        filtered_df = filtered_df[filtered_df["has_local_video"]]
-
-    # Filter by hashtag
-    if selected_hashtag != "None" and "hashtags" in filtered_df.columns:
-        filtered_df = filtered_df[
-            filtered_df["hashtags"].fillna("").str.contains(selected_hashtag)
-        ]
-
-    # Filter by username
-    if selected_username != "None" and "channel_username" in filtered_df.columns:
-        filtered_df = filtered_df[filtered_df["channel_username"] == selected_username]
 
     # Sort by selected option
     try:
@@ -490,12 +368,12 @@ def main():
 
     st.markdown(f"### Showing {len(filtered_df)} TikTok posts")
 
-    # Display each post with dividers between them
+    # Display each post with clear separation
     for i, (_, row) in enumerate(filtered_df.iterrows()):
-        display_tiktok_post(row)
-        # Add a divider only if it's not the last post
+        display_tiktok_post(row, video_dir)
+        # Add divider between posts
         if i < len(filtered_df) - 1:
-            st.divider()
+            st.markdown("---")
 
     # Add footer
     st.markdown("---")

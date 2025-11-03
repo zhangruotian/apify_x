@@ -37,7 +37,7 @@ def scrape_tiktok_and_save_jsonl(
     date_range="DEFAULT",
     location=None,
     sort_type="RELEVANCE",
-    output_base_filename="tiktok_posts",
+    output_dir="tiktok_posts",
     convert_to_csv=True,
 ):
     """
@@ -50,13 +50,13 @@ def scrape_tiktok_and_save_jsonl(
         date_range (str): Date range for posts - "DEFAULT", "PAST_WEEK", "PAST_MONTH", "PAST_YEAR"
         location (str): Location code, e.g., "US"
         sort_type (str): Sort type - "RELEVANCE", "LIKES", "NEWEST"
-        output_base_filename (str): Base name for the output file
+        output_dir (str): Base directory to save the output files (e.g., "tiktok/assam_flood")
         convert_to_csv (bool): Whether to also convert the JSONL to CSV
 
     Returns:
         tuple: (jsonl_path, csv_path) - Paths to the created files (csv_path may be None)
     """
-    print(f"Starting TikTok scraper with {max_items} max items")
+    print(f"Starting TikTok scraper for campaign in '{output_dir}'")
 
     if start_urls:
         print(f"Starting URLs: {', '.join(start_urls)}")
@@ -81,9 +81,24 @@ def scrape_tiktok_and_save_jsonl(
     if location:
         run_input["location"] = location
 
-    # Create timestamp and output path
+    # Create timestamp and output paths
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-    jsonl_path = f"{output_base_filename}_{timestamp}.jsonl"
+
+    # Create base filename from keywords if available, otherwise use a generic name
+    if keywords:
+        # Sanitize keywords for use in a filename
+        safe_keywords = "".join(e for e in keywords[0] if e.isalnum())
+        base_filename = f"{safe_keywords}_{timestamp}"
+    else:
+        base_filename = f"tiktok_posts_{timestamp}"
+
+    # Ensure the output directories exist
+    json_dir = os.path.join(output_dir, "jsons")
+    csv_dir = os.path.join(output_dir, "csvs")
+    os.makedirs(json_dir, exist_ok=True)
+    os.makedirs(csv_dir, exist_ok=True)
+
+    jsonl_path = os.path.join(json_dir, f"{base_filename}.jsonl")
 
     try:
         # Run the actor and wait for it to finish
@@ -123,7 +138,7 @@ def scrape_tiktok_and_save_jsonl(
         csv_path = None
         if convert_to_csv and CSV_CONVERSION_AVAILABLE and count > 0:
             print("\nConverting JSONL to CSV with dedicated media columns...")
-            csv_path = convert_jsonl_to_csv(jsonl_path)
+            csv_path = convert_jsonl_to_csv(jsonl_path, output_csv_dir=csv_dir)
 
         return jsonl_path, csv_path
 
@@ -133,31 +148,29 @@ def scrape_tiktok_and_save_jsonl(
 
 
 if __name__ == "__main__":
-    # Configure these parameters as needed
+    # --- Configuration ---
+    campaign_name = "south_asia_flood"  # <--- Change this for a new campaign
 
     # Option 1: Scrape specific URLs
     start_urls = []
 
     # Option 2: Use keywords search
-    keywords = [
-        "Sylhet Flood",
-        "Sylhet flood",
-        "sylhet flood",
-        "SylhetFlood",
-        "sylhetflood",
-        "Flood In Sylhet",
-        "FloodInSylhet",
-        "flood in sylhet",
-    ]
+    keywords = ["Pakistan Floods", "Floods", "Pakistan Flooding", "Pakistan Flash Floods", "Pakistan FlashFloods"]
 
     # General settings
-    max_items = 5000
+    max_items = 2000
     date_range = "DEFAULT"  # Options: "DEFAULT", "PAST_WEEK", "PAST_MONTH", "PAST_YEAR"
-    location = None
+    location = "PK"
     sort_type = "RELEVANCE"  # Options: "RELEVANCE", "LIKES", "NEWEST"
     convert_to_csv = True  # Whether to also convert the JSONL to CSV
+    # -------------------
 
-    print(f"Using parameters: Max items: {max_items}, Sort by: {sort_type}")
+    # Define the output directory based on the campaign name
+    output_dir = os.path.join("tiktok", campaign_name)
+
+    print(
+        f"Using parameters: Max items: {max_items}, Sort by: {sort_type}, Campaign: {campaign_name}"
+    )
     print(
         "To use different parameters, edit the values in the __main__ section of this script"
     )
@@ -180,6 +193,7 @@ if __name__ == "__main__":
         date_range=date_range,
         location=location,
         sort_type=sort_type,
+        output_dir=output_dir,
         convert_to_csv=convert_to_csv,
     )
 

@@ -15,22 +15,13 @@ from urllib.parse import urlparse
 import requests
 
 
-def find_latest_csv():
-    """Find the most recent CSV file in the current directory."""
-    csv_files = glob.glob("*.csv")
-    if not csv_files:
-        return None
-
-    # Sort by modification time, most recent first
-    latest_file = max(csv_files, key=os.path.getmtime)
-    return latest_file
-
-
-def create_media_directories():
-    """Create directories for downloaded media if they don't exist."""
-    os.makedirs("media/photos", exist_ok=True)
-    os.makedirs("media/videos", exist_ok=True)
-    return "media/photos", "media/videos"
+def create_media_directories(base_media_dir):
+    """Create directories for downloaded media within a specific base directory."""
+    photos_dir = os.path.join(base_media_dir, "photos")
+    videos_dir = os.path.join(base_media_dir, "videos")
+    os.makedirs(photos_dir, exist_ok=True)
+    os.makedirs(videos_dir, exist_ok=True)
+    return photos_dir, videos_dir
 
 
 def get_file_extension(url):
@@ -97,12 +88,13 @@ def sanitize_filename(filename):
     return filename
 
 
-def process_csv_and_download_media(csv_file):
+def process_csv_and_download_media(csv_file, campaign_base_dir):
     """
     Process the CSV file, download media, and create a new CSV with local paths.
 
     Args:
         csv_file: Path to the CSV file containing tweet data
+        campaign_base_dir: The base directory for the campaign (e.g., 'twitter/assam_flood')
 
     Returns:
         Path to the new CSV file with local paths
@@ -111,13 +103,15 @@ def process_csv_and_download_media(csv_file):
         print(f"Error: CSV file '{csv_file}' not found!")
         return None
 
-    # Create directories for media
-    photos_dir, videos_dir = create_media_directories()
+    # Create directories for media inside the campaign folder
+    media_dir = os.path.join(campaign_base_dir, "media")
+    photos_dir, videos_dir = create_media_directories(media_dir)
 
-    # Generate output CSV filename
+    # Generate output CSV filename to be saved in the campaign's csvs folder
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     base_name = os.path.splitext(os.path.basename(csv_file))[0]
-    output_csv = f"{base_name}_with_local_paths_{timestamp}.csv"
+    output_csv_name = f"{base_name}_with_local_paths_{timestamp}.csv"
+    output_csv_path = os.path.join(campaign_base_dir, "csvs", output_csv_name)
 
     # Track stats
     total_tweets = 0
@@ -244,7 +238,7 @@ def process_csv_and_download_media(csv_file):
                 )
 
         # Write to the new CSV
-        with open(output_csv, "w", encoding="utf-8", newline="") as outfile:
+        with open(output_csv_path, "w", encoding="utf-8", newline="") as outfile:
             writer = csv.DictWriter(outfile, fieldnames=new_fieldnames)
             writer.writeheader()
             writer.writerows(all_rows)
@@ -257,41 +251,52 @@ def process_csv_and_download_media(csv_file):
     print(f"Photos successfully downloaded: {downloaded_photos}")
     print(f"Videos successfully downloaded: {downloaded_videos}")
     print(f"Failed downloads: {failed_downloads}")
-    print(f"\nNew CSV file with local paths: {output_csv}")
+    print(f"\nNew CSV file with local paths: {output_csv_path}")
 
-    return output_csv
+    return output_csv_path
 
 
 if __name__ == "__main__":
-    # Configure these parameters directly
-    csv_file = "csvs/filtered_tweets_aug_to_oct_2024.csv"  # Path to your CSV file
+    # --- Configuration ---
+    # This script will download media for the specified campaign.
+    # It automatically finds the most recent 'filtered' CSV in the campaign's 'csvs' directory.
+    campaign_name = "kerala_flood"  # <--- Change this for other campaigns
+    # -------------------
 
-    # Check if file exists before running
-    if not os.path.exists(csv_file):
-        print(f"CSV file '{csv_file}' not found!")
-        print("Looking for the most recent CSV file instead...")
+    # Define base directory for the campaign
+    campaign_dir = os.path.join("twitter", campaign_name)
+    csv_dir = os.path.join(campaign_dir, "csvs")
 
-        latest_csv = find_latest_csv()
-        if latest_csv:
-            print(f"Found most recent CSV file: {latest_csv}")
-            csv_file = latest_csv
-        else:
-            print("No CSV files found in the current directory.")
-            print(
-                "Edit the csv_file parameter in the __main__ section to point to your CSV file."
-            )
-            sys.exit(1)
+    # Check if the campaign directory exists
+    if not os.path.isdir(campaign_dir):
+        print(f"Error: Campaign directory '{campaign_dir}' not found.")
+        print(
+            "Please ensure the campaign name is correct and the directory structure is in place."
+        )
+        sys.exit(1)
 
-    print(f"Using CSV file: {csv_file}")
+    # Find the latest "filtered" CSV file in the campaign's CSV directory
+    print(f"Searching for filtered CSV files in: {csv_dir}")
+    filtered_csv_files = glob.glob(os.path.join(csv_dir, "filtered_*.csv"))
+    if not filtered_csv_files:
+        print(f"Error: No filtered CSV files found in '{csv_dir}'.")
+        print("Please run the filtering script (filter_tweets.py) first.")
+        sys.exit(1)
+
+    # Get the most recently modified file
+    latest_filtered_csv = max(filtered_csv_files, key=os.path.getmtime)
+    print(f"Using the latest filtered CSV file: {latest_filtered_csv}")
 
     # Process the CSV and download media
-    output_csv = process_csv_and_download_media(csv_file)
+    output_csv = process_csv_and_download_media(latest_filtered_csv, campaign_dir)
 
     if output_csv:
         print("\nMedia download complete!")
-        print("You can find all media files in the 'media' directory.")
         print(
-            f"The new CSV file '{output_csv}' includes additional columns with local file paths."
+            f"You can find all media files in the '{os.path.join(campaign_dir, 'media')}' directory."
+        )
+        print(
+            f"The new CSV file '{os.path.basename(output_csv)}' includes additional columns with local file paths."
         )
         print("\nTo analyze media content after downloading:")
         print("  python check_media.py")

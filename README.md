@@ -21,15 +21,15 @@ This document lists the available datasets for flood-related social media analys
 | Dataset            | Records | Photos | Videos | CSV Path                                                      | Media Directory                      |
 |--------------------|---------|--------|--------|---------------------------------------------------------------|--------------------------------------|
 | Assam Flood        | 311     | 195    | 73     | `twitter/assam_flood/csvs/filtered_assam_flood_tweets_20240501_20240801_with_local_paths_20250721_172531.csv`     | `twitter/assam_flood/media_cleaned`  |
-| Bangladesh Flood   | 586     | 545    | 144    | `twitter/bangladesh_flood/csvs/filtered_tweets_aug_to_oct_2024_with_local_paths_20250604_133037.csv` | `twitter/bangladesh_flood/media_cleaned` |
+| Bangladesh Flood   | 952     | 907    | 144    | `twitter/bangladesh_flood/csvs/filtered_tweets_aug_to_oct_2024_with_local_paths_20250604_133037.csv` | `twitter/bangladesh_flood/media_cleaned` |
 | Kerala Flood       | 361     | 172    | 177    | `twitter/kerala_flood/csvs/filtered_kerala_flood_tweets_20240715_20240901_with_local_paths_20250721_181731.csv`   | `twitter/kerala_flood/media_cleaned` |
 | Pakistan Flood     | 237     | 168    | 62     | `twitter/pakistan_flood/csvs/filtered_pakistan_flood_tweets_20220601_20221101_with_local_paths_20250721_175020.csv` | `twitter/pakistan_flood/media_cleaned` |
 
 ### 🌊 Combined Clean Dataset
 | Dataset                    | Records | Photos | Videos |                            
 |----------------------------|---------|--------|--------|
-| **All Twitter Floods (Clean)** | **1,495** | **1,080** | **456** |  
+| **All Twitter Floods (Clean)** | **1,861** | **1,442** | **456** |  
 
-**Total Media Files**: 1,536 media files (1,080 photos + 456 videos) across all events
+**Total Media Files**: 1,898 media files (1,442 photos + 456 videos) across all events
 
 

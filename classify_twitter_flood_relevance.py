@@ -419,6 +419,11 @@ async def process_csv_async(
         task_indices = []
         
         for idx, row in rows_to_process.iterrows():
+            # 只处理 Google Images 行（新加入的）
+            screen_name = row.get('screen_name', '')
+            if screen_name != 'GoogleImages':
+                continue  # 跳过非 Google Images 行
+            
             # 检查是否已经处理过
             if resume and pd.notna(row.get(classification_column)):
                 reason_val = row.get(reason_column)

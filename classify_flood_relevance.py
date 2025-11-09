@@ -21,7 +21,7 @@ from PIL import Image
 class OllamaVLMClassifier:
     """使用 Ollama VLM 进行洪水相关性分类"""
     
-    def __init__(self, base_url: str = "http://127.0.0.1:11434", model: str = "qwen3-vl:30b-a3b-instruct-q4_K_M"):
+    def __init__(self, base_url: str = "http://127.0.0.1:11434", model: str = "qwen3-vl:32b-instruct"):
         self.base_url = base_url.rstrip('/')
         self.model = model
         self._session = None  # 用于异步请求的 session
@@ -495,7 +495,7 @@ class OllamaVLMClassifier:
 async def process_csv_async(
     csv_path: str,
     output_csv_path: Optional[str] = None,
-    model: str = "qwen3-vl:30b-a3b-instruct-q4_K_M",
+    model: str = "qwen3-vl:32b-instruct",
     base_url: str = "http://127.0.0.1:11434",
     start_idx: int = 0,
     max_rows: Optional[int] = None,
@@ -743,7 +743,7 @@ async def process_csv_async(
 def process_csv(
     csv_path: str,
     output_csv_path: Optional[str] = None,
-    model: str = "qwen3-vl:30b-a3b-instruct-q4_K_M",
+    model: str = "qwen3-vl:32b-instruct",
     base_url: str = "http://127.0.0.1:11434",
     start_idx: int = 0,
     max_rows: Optional[int] = None,
@@ -801,7 +801,7 @@ def main():
     )
     parser.add_argument(
         "--model",
-        default="qwen3-vl:30b-a3b-instruct-q4_K_M",
+        default="qwen3-vl:32b-instruct",
         help="Ollama 模型名称"
     )
     parser.add_argument(

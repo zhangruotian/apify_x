@@ -14,3 +14,4 @@ opencv-python>=4.5.0
 aiohttp>=3.8.0
 openai
 pillow
+seaborn

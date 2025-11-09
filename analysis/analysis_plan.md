@@ -133,10 +133,12 @@
 ### a) water_depth_bin
 
 - **Dose-Response Baseline:** Already used for losses and urgency.
+    - Categorical order locked for analysis code: ["none","ankle","knee","waist","vehicle_height","indoor_flood","unknown"].
 
 ### b) crowd_size_bin
 
 - Does crowding co-occur with `infrastructure_access` (blocked roads) or `relief_visible`?
+    - Categorical order locked for analysis code: ["1","2-5","6-20",">20","unknown"].
 
 ### c) relief_visible & relief_actor_type
 
@@ -204,10 +206,12 @@
 
 - **NELI (Non-Economic Loss Intensity):**
     - Formula: $\sum_k w_k \cdot 1[present_k] \cdot conf_k$ (weights $w_k$ can be uniform or policy-driven).
+    - Default in code: uniform weights $w_k = 1$.
     - Relation to  `urgency`, `depth`, `relief_visible`.
     - Compare NELI distribution by `scene`/`context`.
 - **VISI (Visual Intensity):**
     - Formula: `depth_level_num + damage_signs_count + crowd_size_bin_num + relief_visible * α`
+    - Default in code: α = 1.
     - Relation to **NELI.**
 
 ---
@@ -230,6 +234,7 @@
 ### Validation 2: Caption-Image Consistency (CIC)
 
 - Whether caption and image are consistent.
+- Note: Not evaluated in current dataset; requires additional field/method for scoring.
 
 ### Validation 3: Is the data reasonable?
 
